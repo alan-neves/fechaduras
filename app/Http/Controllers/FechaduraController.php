@@ -258,6 +258,16 @@ class FechaduraController extends Controller
             $user->foto = $fotoName;
             $user->save();
 
+            // Propaga para outras fechaduras (só usuários USP)
+            if ($user instanceof User) {
+                foreach (Fechadura::where('id', '!=', $fechadura->id)->get() as $f) {
+                    $api = new ApiControlIdService($f);
+                    if (collect($api->loadUsers())->contains('id', (int) $userId)) {
+                        $api->uploadFoto($userId, $fotoName);
+                    }
+                }
+            }
+
             return back()
                 ->with('alert-success', $result['message']);
 
