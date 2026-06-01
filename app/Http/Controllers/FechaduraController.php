@@ -204,12 +204,7 @@ class FechaduraController extends Controller
     {
         Gate::authorize('adminFechadura', $fechadura);
 
-        // Busca informações do usuário na fechadura
-        $apiService = new ApiControlIdService($fechadura);
-        $usuarios = $apiService->loadUsers();
-
-        // Encontra o usuário específico
-        $usuarioFechadura = collect($usuarios)->firstWhere('id', (int)$userId);
+        $usuarioFechadura = (new ApiControlIdService($fechadura))->loadUser($userId);
 
         return view('fechaduras.cadastrar_foto', [
             'fechadura' => $fechadura,
@@ -262,7 +257,7 @@ class FechaduraController extends Controller
             if ($user instanceof User) {
                 foreach (Fechadura::where('id', '!=', $fechadura->id)->get() as $f) {
                     $api = new ApiControlIdService($f);
-                    if (collect($api->loadUsers())->contains('id', (int) $userId)) {
+                    if ($api->loadUser($userId) !== null) {
                         $api->uploadFoto($userId, $fotoName);
                     }
                 }

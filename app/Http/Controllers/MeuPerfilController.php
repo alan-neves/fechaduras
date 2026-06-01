@@ -22,11 +22,13 @@ class MeuPerfilController extends Controller
     public function index()
     {
         $user = auth()->user();
-        $fechaduras = $this->getFechadurasDoUsuario($user);
 
-        $fechadurasStatus = $fechaduras->map(function ($fechadura) use ($user) {
-            $usuarios = (new ApiControlIdService($fechadura))->loadUsers();
-            $usuarioNaFechadura = collect($usuarios)->firstWhere('id', (int) $user->codpes);
+        $fechadurasStatus = Fechadura::all()->map(function ($fechadura) use ($user) {
+            try {
+                $usuarioNaFechadura = (new ApiControlIdService($fechadura))->loadUser($user->codpes);
+            } catch (\Exception $e) {
+                return null;
+            }
 
             if (!$usuarioNaFechadura) return null;
 
@@ -83,9 +85,7 @@ class MeuPerfilController extends Controller
         $tempName = 'temp_' . Str::uuid() . '.jpg';
         Storage::disk('fotos')->put($tempName, $foto);
 
-        $fechaduras = $this->getFechadurasDoUsuario($user)->filter(fn($f) =>
-            collect((new ApiControlIdService($f))->loadUsers())->contains('id', (int) $user->codpes)
-        );
+        $fechaduras = $this->getFechadurasDoUsuario($user);
 
         // Testa em uma fechadura antes de salvar
         if ($fechaduras->isNotEmpty()) {
@@ -122,9 +122,7 @@ class MeuPerfilController extends Controller
     public function formSenhaFechadura(Fechadura $fechadura)
     {
         $user = auth()->user();
-        $usuarios = (new ApiControlIdService($fechadura))->loadUsers();
-
-        if (!collect($usuarios)->contains('id', (int) $user->codpes)) {
+        if (!(new ApiControlIdService($fechadura))->loadUser($user->codpes)) {
             abort(403, 'Você não está cadastrado nesta fechadura.');
         }
 
@@ -149,8 +147,7 @@ class MeuPerfilController extends Controller
     {
         return Fechadura::all()->filter(function ($fechadura) use ($user) {
             try {
-                $usuarios = (new ApiControlIdService($fechadura))->loadUsers();
-                return collect($usuarios)->contains('id', (int) $user->codpes);
+                return (new ApiControlIdService($fechadura))->loadUser($user->codpes) !== null;
             } catch (\Exception $e) {
                 return false;
             }
