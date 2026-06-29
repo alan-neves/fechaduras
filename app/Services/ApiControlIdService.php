@@ -41,6 +41,21 @@ class ApiControlIdService
         return $usuarios;
     }
 
+    public function loadUser(int $userId){
+        $route = 'http://' . $this->fechadura->ip . ':' . $this->fechadura->porta . '/load_objects.fcgi?session=' . $this->sessao;
+        
+        $response = Http::post($route, [
+            'object' => 'users',
+            'where' => [
+                'users' => [
+                    'id' => $userId
+                ]
+            ]
+        ]);
+
+        return $response->json()['users'][0] ?? null;
+    }
+
     public function createUsers($faltantes){
         $url = 'http://' . $this->fechadura->ip . ':' . $this->fechadura->porta . '/create_objects.fcgi?session=' . $this->sessao;
 

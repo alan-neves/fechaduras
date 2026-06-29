@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\FechaduraController;
+use App\Http\Controllers\MeuPerfilController;
 use App\Http\Controllers\LogController;
 use App\Http\Controllers\IndexController;
 use App\Http\Controllers\AdminController;
@@ -11,6 +12,14 @@ use App\Models\Fechadura;
 use App\Services\ApiControlIdService;
 
 Route::get('/',[IndexController::class, 'index']);
+
+// Rotas meu perfil
+Route::get('/meu-perfil', [MeuPerfilController::class, 'index']);
+Route::get('/meu-perfil/foto/{id}', [MeuPerfilController::class, 'foto']);
+Route::get('/meu-perfil/foto-geral', [MeuPerfilController::class, 'FotoGeral']);
+Route::post('/meu-perfil/foto-geral', [MeuPerfilController::class, 'updateFotoGeral']);
+Route::get('/meu-perfil/senha/{fechadura}', [MeuPerfilController::class, 'formSenhaFechadura']);
+Route::post('/meu-perfil/senha/{fechadura}', [MeuPerfilController::class, 'updateSenhaFechadura']);
 
 // Rotas CRUD - Fechadura
 Route::get('/fechaduras',[FechaduraController::class, 'index']);

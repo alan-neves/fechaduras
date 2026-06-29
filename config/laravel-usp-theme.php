@@ -2,7 +2,17 @@
 
 $menu = [
     [
-        'text' => '<i class="fas fa-home"></i> Fechaduras',
+        'text' => '<i class="fas fa-home"></i> Home',
+        'url' => '/',
+        'can' => 'logado'
+    ],
+    [
+        'text' => '<i class="fas fa-user-circle"></i> Meu Perfil',
+        'url' => 'meu-perfil',
+        'can' => 'logado' 
+    ],
+    [
+        'text' => '<i class="fas fa-key"></i> Fechaduras',
         'url' => 'fechaduras',
         'can' => 'logado'
     ],
