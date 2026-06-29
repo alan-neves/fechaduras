@@ -61,8 +61,8 @@ class User extends Authenticatable
         return $this->belongsToMany(Fechadura::class);
     }
 
-    public function temFotoLocal()
-    {
-        return !empty($this->foto) && Storage::disk('fotos')->exists($this->foto);
-    }
+    /* public function temFotoLocal() */
+    /* { */
+    /*     return !empty($this->foto) && Storage::disk('fotos')->exists($this->foto); */
+    /* } */
 }

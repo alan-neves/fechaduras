@@ -16,7 +16,7 @@ Route::get('/',[IndexController::class, 'index']);
 // Rotas meu perfil
 Route::get('/meu-perfil', [MeuPerfilController::class, 'index']);
 Route::get('/meu-perfil/foto/{id}', [MeuPerfilController::class, 'foto']);
-Route::get('/meu-perfil/foto-geral', [MeuPerfilController::class, 'formFotoGeral']);
+Route::get('/meu-perfil/foto-geral', [MeuPerfilController::class, 'FotoGeral']);
 Route::post('/meu-perfil/foto-geral', [MeuPerfilController::class, 'updateFotoGeral']);
 Route::get('/meu-perfil/senha/{fechadura}', [MeuPerfilController::class, 'formSenhaFechadura']);
 Route::post('/meu-perfil/senha/{fechadura}', [MeuPerfilController::class, 'updateSenhaFechadura']);

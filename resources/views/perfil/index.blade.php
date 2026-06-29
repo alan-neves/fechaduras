@@ -9,14 +9,15 @@
                     <h5>Meus Dados</h5>
                 </div>
                 <div class="card-body text-center">
-                    <img src="/meu-perfil/foto/{{ $user->id }}"
-                        class="img-thumbnail mb-3"
-                        style="max-width: 200px;"
-                        onerror="this.style.display='none'; document.getElementById('sem-foto').style.display='block';">
-
-                    <div id="sem-foto" class="alert alert-warning" style="display: none;">
-                        <i class="fas fa-user-slash"></i> Sem foto cadastrada
+                  @if($foto)
+                    <img src="data:image/jpeg;base64,{{ $foto }}"
+                          class="img-thumbnail mb-3"
+                          style="max-width: 200px;">
+                  @else
+                    <div class="alert alert-warning">
+                      <i class="fas fa-user-slash"></i> Sem foto cadastrada
                     </div>
+                  @endif
 
                     <h5>{{ $user->name }}</h5>
                     <p>Nº USP: {{ $user->codpes }}</p>

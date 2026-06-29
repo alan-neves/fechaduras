@@ -7,9 +7,10 @@ use Illuminate\Support\Str;
 use App\Http\Requests\CadastrarFotoRequest;
 use App\Http\Requests\CadastrarSenhaRequest;
 use App\Models\Fechadura;
-use App\Models\Admin;
 use App\Services\ApiControlIdService;
-use Uspdev\Wsfoto;
+use App\Actions\ObterFotoLocalRemota;
+use App\Actions\ObterFechadurasUsuario;
+use Illuminate\Support\Facades\Auth;
 
 class MeuPerfilController extends Controller
 {
@@ -26,7 +27,7 @@ class MeuPerfilController extends Controller
         $fechadurasStatus = Fechadura::all()->map(function ($fechadura) use ($user) {
             try {
                 $usuarioNaFechadura = (new ApiControlIdService($fechadura))->loadUser($user->codpes);
-            } catch (\Exception $e) {
+            } catch (\Exception) {
                 return null;
             }
 
@@ -37,38 +38,25 @@ class MeuPerfilController extends Controller
                 'tem_foto'  => $usuarioNaFechadura['image_timestamp'] > 0,
                 'tem_senha' => !empty($usuarioNaFechadura['password']),
             ];
+
         })->filter()->values();
+
+        $foto = ObterFotoLocalRemota::handle(Auth::user());
 
         return view('perfil.index', [
             'user' => $user,
-            'fechadurasStatus' => $fechadurasStatus
+            'fechadurasStatus' => $fechadurasStatus,
+            'foto' => $foto
         ]);
     }
 
-    // Exibe a foto do usuário logado
-    public function foto($id)
+    public function FotoGeral()
     {
-        $user = auth()->user();
-        if ($user->id != $id) abort(403);
-        
-        if ($user->temFotoLocal()) {
-            $conteudo = Storage::disk('fotos')->get($user->foto);
-            if ($conteudo) {
-                return response($conteudo)->header('Content-Type', 'image/jpeg');
-            }
-        }
+        $foto = ObterFotoLocalRemota::handle(Auth::user());
 
-        $wsFoto = Wsfoto::obter($user->codpes);
-        if ($wsFoto) {
-            return response(base64_decode($wsFoto))->header('Content-Type', 'image/jpeg');
-        }
-
-        return abort(404);
-    }
-
-    public function formFotoGeral()
-    {
-        return view('perfil.editar_foto_geral');
+        return view('perfil.editar_foto_geral', [
+            'foto' => $foto
+        ]);
     }
 
     // Processa o upload da foto e envia para todas as fechaduras do usuário
@@ -76,46 +64,44 @@ class MeuPerfilController extends Controller
     {
         $user = auth()->user();
 
-        $foto = $request->foto;
-        if (strpos($foto, 'base64,') !== false) {
-            $foto = base64_decode(explode('base64,', $foto)[1]);
-        }
-
-        // Salva temporário para testar
-        $tempName = 'temp_' . Str::uuid() . '.jpg';
-        Storage::disk('fotos')->put($tempName, $foto);
-
-        $fechaduras = $this->getFechadurasDoUsuario($user);
+        $fechaduras = ObterFechadurasUsuario::handle($user);
 
         // Testa em uma fechadura antes de salvar
         if ($fechaduras->isNotEmpty()) {
+
+            $foto = $request->safe()->string('foto');
+            if (strpos($foto, 'base64,') !== false) {
+                $foto = base64_decode(explode('base64,', $foto)[1]);
+            }
+
+            $fotoName = Str::uuid() . '.jpg';
+            Storage::disk('fotos')->put($fotoName, $foto);
+
             $teste = (new ApiControlIdService($fechaduras->first()))
-                ->testarFoto($fechaduras->first(), Storage::disk('fotos')->path($tempName));
+                ->testarFoto($fechaduras->first(), Storage::disk('fotos')->path($fotoName));
 
             if (!$teste['success']) {
-                Storage::disk('fotos')->delete($tempName);
+                Storage::disk('fotos')->delete($fotoName);
                 return back()->with('alert-danger', $teste['message']);
             }
+
+            if (!is_null($user->foto)) {
+                Storage::disk('fotos')->delete($user->foto);
+            }
+
+            $user->foto = $fotoName;
+            $user->save();
+
+            // Envia para todas as fechaduras
+            foreach ($fechaduras as $fechadura) {
+                (new ApiControlIdService($fechadura))->uploadFoto($user->codpes, $fotoName);
+            }
+
+            return redirect('/meu-perfil')->with('alert-success', 'Foto atualizada em todas as fechaduras!');
         }
 
-        // Aprovada — substitui foto local
-        if (!is_null($user->foto)) {
-            Storage::disk('fotos')->delete($user->foto);
-        }
+        return back()->with('alert-info', 'O usuário não possui cadastro em nenhuma fechadura!');
 
-        $fotoName = Str::uuid() . '.jpg';
-        Storage::disk('fotos')->put($fotoName, $foto);
-        Storage::disk('fotos')->delete($tempName);
-
-        $user->foto = $fotoName;
-        $user->save();
-
-        // Envia para todas as fechaduras
-        foreach ($fechaduras as $f) {
-            (new ApiControlIdService($f))->uploadFoto($user->codpes, $fotoName);
-        }
-
-        return redirect('/meu-perfil')->with('alert-success', 'Foto atualizada em todas as fechaduras!');
     }
 
     // Formulário para trocar senha em uma fechadura específica
@@ -140,18 +126,6 @@ class MeuPerfilController extends Controller
         }
 
         return back()->with('alert-danger', 'Erro ao alterar senha.');
-    }
-
-    // Retorna todas as fechaduras às quais o usuário tem acesso
-    private function getFechadurasDoUsuario($user)
-    {
-        return Fechadura::all()->filter(function ($fechadura) use ($user) {
-            try {
-                return (new ApiControlIdService($fechadura))->loadUser($user->codpes) !== null;
-            } catch (\Exception $e) {
-                return false;
-            }
-        })->values();
     }
 
 }
