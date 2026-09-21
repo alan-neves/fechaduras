@@ -1,0 +1,8 @@
+<phpunit backupGlobals="false" beStrictAboutTestsThatDoNotTestAnything="false" colors="true" processIsolation="false" stopOnError="false" stopOnFailure="false" cacheDirectory=".phpunit.cache" backupStaticProperties="false">
+<testsuites>
+<testsuite name="Browser Test Suite">
+<file>./tests/Browser/IndexTest.php</file>
+<file>./tests/Browser/LoginTest.php</file>
+</testsuite>
+</testsuites>
+</phpunit>
